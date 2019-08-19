@@ -6,15 +6,15 @@ import chalk from 'chalk'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as glob from 'glob'
-import { Command } from './red5-commands/Command'
-import { isRed5Project, notAProject } from './helper'
-import ListCommands, { ItemInfo } from './red5-commands/list'
+import { Command } from './hp-commands/Command'
+import { isHorsepowerProject, notAProject } from './helper'
+import ListCommands, { ItemInfo } from './hp-commands/list'
 
 export const error = chalk.red
 export const warning = chalk.yellow
 export const info = chalk.cyan
 
-/** @type {string} The Location of the current directory the script is executing within (This is where a red5 project should be living) */
+/** @type {string} The Location of the current directory the script is executing within (This is where a horsepower project should be living) */
 export const PATH: string = process.cwd()
 
 /** @type {string} The root location of where the resources such as template files live */
@@ -83,7 +83,7 @@ async function runCommand() {
   const mainOptions = cmdArgs(mainDefinitions, { stopAtFirstUnknown: true } as any)
   if (mainOptions.version === null) {
     try {
-      let packages = await new Promise<string[]>(r => glob(path.join(process.cwd(), 'node_modules/@red5/*/package.json'), (e, res) => r(res)))
+      let packages = await new Promise<string[]>(r => glob(path.join(process.cwd(), 'node_modules/@horsepower/*/package.json'), (e, res) => r(res)))
       let longest = 0
       let info = []
       for (let file of packages) {
@@ -93,7 +93,7 @@ async function runCommand() {
       }
       info.forEach(str => console.log(`${str.name.padEnd(longest, ' ')} -> ${str.version}`))
     } catch (e) {
-      console.log(error('This is not a working red5 application'))
+      console.log(error('This is not a working horsepower application'))
     }
   } else {
     try {
@@ -111,11 +111,11 @@ async function runCommand() {
         default:
           try {
             let [command_group, command_name] = mainOptions.command.split(':')
-            // Makes sure this is a red5 project before running the command unless this is a new project
-            let isProject = await isRed5Project()
+            // Makes sure this is a horsepower project before running the command unless this is a new project
+            let isProject = await isHorsepowerProject()
             // console.log(command_group, command_name)
             // console.log(command_group != 'new', command_name != '', isProject)
-            // let red5Project =
+            // let horsepowerProject =
             if (
               (command_group != 'new' && command_name != '' && !isProject) &&
               (command_group != 'list' && command_name != '' && !isProject) &&
@@ -138,7 +138,7 @@ async function runCommand() {
               let defaultOption = command.options.find(i => i.defaultOption || false)
 
               // Log the command
-              console.log(`\x1b[32musage: red5 ${command.name} ${defaultOption ? `<${defaultOption.name}>` : ''}\x1b[0m\n`)
+              console.log(`\x1b[32musage: horsepower ${command.name} ${defaultOption ? `<${defaultOption.name}>` : ''}\x1b[0m\n`)
 
               // Log the description
               console.log(`${command.description || ''}\n`)
@@ -164,8 +164,8 @@ async function runCommand() {
             }
           } catch (e) {
             console.log(error('Command was not found'))
-            console.log('  red5 <command> [options]')
-            console.log('  -- Run "red5 list" for a list of commands')
+            console.log('  horsepower <command> [options]')
+            console.log('  -- Run "horsepower list" for a list of commands')
           }
           break
       }

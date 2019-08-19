@@ -2,7 +2,7 @@ import { Command, CmdArguments } from '../Command'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
-import { isRed5Project, notAProject } from '../../helper'
+import { isHorsepowerProject, notAProject } from '../../helper'
 import { warning } from '../..'
 import ServerListCommand from './list';
 
@@ -20,11 +20,11 @@ export default class ServerStopCommand extends Command {
   public static async stop(options: ServerStopOptions, silent: boolean = false) {
     let pid
     let dir = options.path ? path.resolve(process.cwd(), options.path) : process.cwd()
-    if (!await isRed5Project(dir)) return notAProject()
-    let red5json = await import(path.join(dir, 'red5.json'))
-    if (red5json.server && red5json.server.pid) {
-      pid = red5json.server.pid
-      delete red5json.server.pid
+    if (!await isHorsepowerProject(dir)) return notAProject()
+    let horsepowerjson = await import(path.join(dir, 'horsepower.json'))
+    if (horsepowerjson.server && horsepowerjson.server.pid) {
+      pid = horsepowerjson.server.pid
+      delete horsepowerjson.server.pid
       !silent && console.log(`Stopping server with a process id of "${pid}"`)
       try {
         os.platform() == 'win32' ? process.kill(pid) : process.kill(-pid)
@@ -35,7 +35,7 @@ export default class ServerStopCommand extends Command {
     } else {
       !silent && console.log(warning('There is no process id set for this project.'))
     }
-    fs.writeFile(path.join(dir, 'red5.json'), JSON.stringify(red5json, null, 2), () => { })
+    fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerjson, null, 2), () => { })
     fs.truncate(path.join(dir, 'storage/framework/logs/server.log'), () => { })
   }
 

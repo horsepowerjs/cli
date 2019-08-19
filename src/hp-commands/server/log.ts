@@ -2,7 +2,7 @@ import { Command, CmdArguments } from '../Command'
 import * as path from 'path'
 import * as cp from 'child_process'
 import * as fs from 'fs'
-import { isRed5Project, notAProject } from '../../helper'
+import { isHorsepowerProject, notAProject } from '../../helper'
 import { error } from '../..';
 
 interface ServerLogOptions {
@@ -13,12 +13,12 @@ export default class ServerLogCommand extends Command {
   public name: string = 'server:log'
   public description: string = 'Shows the output of a server log in real time'
   public options: CmdArguments[] = [
-    { name: 'path', defaultOption: true, description: 'The path to a red5 project to watch' }
+    { name: 'path', defaultOption: true, description: 'The path to a horsepower project to watch' }
   ]
 
   public async fire(options: ServerLogOptions) {
     let dir = options.path ? path.resolve(process.cwd(), options.path) : process.cwd()
-    if (!await isRed5Project(dir)) return notAProject()
+    if (!await isHorsepowerProject(dir)) return notAProject()
     try {
       let log = path.join(dir, 'storage/framework/logs/server.log')
       if (!fs.existsSync(log)) fs.openSync(log, 'w')

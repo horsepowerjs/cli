@@ -1,14 +1,14 @@
 {
-  "name": "@red5/cli",
-  "version": "1.0.4",
-  "description": "red5 command line tools for managing and creating red5 projects.",
+  "name": "@horsepower/cli",
+  "version": "1.0.0",
+  "description": "horsepower command line tools for managing and creating horsepower projects.",
   "scripts": {
     "prepack": "rm -rf cli && rm -rf types && tsc -p .",
     "build": "tsc -p .",
     "watch": "tsc -w -p ."
   },
   "bin": {
-    "red5": "cli/index.js"
+    "hp": "cli/index.js"
   },
   "author": {
     "name": "Ryan Naddy"

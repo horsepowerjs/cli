@@ -1,7 +1,7 @@
 import { Command, CmdArguments } from './Command'
 import * as glob from 'glob'
 import * as path from 'path'
-import { isRed5Project } from '../helper';
+import { isHorsepowerProject } from '../helper';
 
 export interface ItemInfo {
   name: string
@@ -22,8 +22,8 @@ export default class ListCommands extends Command {
     // Get all the commands
     let custom = path.join(process.cwd(), 'app/commands', '*/*.js')
     let customRoot = path.join(process.cwd(), 'app/commands', '*.js')
-    let builtin = path.join(__dirname, '../red5-commands', '*/*.js')
-    let builtinRoot = path.join(__dirname, '../red5-commands', '*.js')
+    let builtin = path.join(__dirname, '../hp-commands', '*/*.js')
+    let builtinRoot = path.join(__dirname, '../hp-commands', '*.js')
 
     // Glob the command locations
     let globs = []
@@ -59,7 +59,7 @@ export default class ListCommands extends Command {
           options: command.options,
           commandName,
           commandGroup,
-          builtin: file.includes('cli/red5-commands'),
+          builtin: file.includes('cli/hp-commands'),
           file
         } as ItemInfo
       }
@@ -90,9 +90,9 @@ export default class ListCommands extends Command {
     let { longest, fileInfo } = await ListCommands.getCommands()
 
     let entries = Object.entries<ItemInfo[]>(fileInfo).sort((a, b) => a[0].localeCompare(b[0]))
-    let isProject = await isRed5Project()
+    let isProject = await isHorsepowerProject()
     for (let group of entries) {
-      // Only show the following if this is not a red5 project
+      // Only show the following if this is not a horsepower project
       if (!isProject && !group[1].find(i =>
         ['new', 'list'].includes(i.commandGroup) ||
         (['start', 'stop', 'log'].includes(i.commandName) && i.commandGroup == 'server')

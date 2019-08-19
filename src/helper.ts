@@ -2,9 +2,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { error } from '.'
 
-export async function isRed5Project(dir?: string) {
+export async function isHorsepowerProject(dir?: string) {
   const DIR = dir ? path.resolve(process.cwd(), dir) : process.cwd()
-  const RED5_PATH = path.join(DIR, 'red5.json')
+  const RED5_PATH = path.join(DIR, 'horsepower.json')
   return new Promise<boolean>(resolve => {
     try {
       fs.stat(RED5_PATH, async (err, stats) => {
@@ -15,6 +15,6 @@ export async function isRed5Project(dir?: string) {
 }
 
 export function notAProject() {
-  console.log(error('This is not a red5 project'))
-  console.log('  -- Run "red5 new <project-name>" to create a new project')
+  console.log(error('This is not a horsepower project'))
+  console.log('  -- Run "horsepower new <project-name>" to create a new project')
 }

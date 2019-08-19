@@ -2,7 +2,7 @@ import { Command, CmdArguments } from '../Command'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
-import { isRed5Project, notAProject } from '../../helper'
+import { isHorsepowerProject, notAProject } from '../../helper'
 import { error, warning } from '../..'
 import * as dotenv from 'dotenv'
 import ServerStopCommand from './stop';

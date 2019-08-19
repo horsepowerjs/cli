@@ -5,7 +5,7 @@ import * as glob from 'glob'
 import chalk from 'chalk'
 import * as sass from 'node-sass'
 import * as chokidar from 'chokidar'
-import ServerListCommand from './red5-commands/server/list';
+import ServerListCommand from './hp-commands/server/list';
 import mkdirp = require('mkdirp');
 
 // The main server process

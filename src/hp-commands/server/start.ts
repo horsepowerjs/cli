@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as mkdirp from 'mkdirp'
 import * as dotenv from 'dotenv'
-import { isRed5Project, notAProject } from '../../helper'
+import { isHorsepowerProject, notAProject } from '../../helper'
 import { error } from '../..'
 
 interface ServerStartOptions {
@@ -23,16 +23,16 @@ export default class StartServerCommand extends Command {
     let dir = options.path ? path.resolve(process.cwd(), options.path) : process.cwd()
     dotenv.config({ path: path.join(dir, '.env') })
     const isProd = ['prod', 'production'].includes(process.env.APP_ENV || 'prod')
-    if (!await isRed5Project(dir)) return notAProject()
+    if (!await isHorsepowerProject(dir)) return notAProject()
     try {
-      let red5json = await import(path.join(dir, 'red5.json'))
-      if (!red5json.server) red5json.server = {}
-      if (red5json.server.pid && red5json.server.pid > 0) {
+      let horsepowerjson = await import(path.join(dir, 'horsepower.json'))
+      if (!horsepowerjson.server) horsepowerjson.server = {}
+      if (horsepowerjson.server.pid && horsepowerjson.server.pid > 0) {
         // Attempt to kill the process
         // If start gets called when a process is already running we need to kill it
         // otherwise there will be multiple servers running which can cause issues
         try {
-          let pid = red5json.server.pid
+          let pid = horsepowerjson.server.pid
           os.platform() == 'win32' ? process.kill(pid) : process.kill(-pid)
         } catch (e) {
           console.log(error(e.message))
@@ -49,8 +49,8 @@ export default class StartServerCommand extends Command {
       try {
         let child = cp.spawn('node', [path.join(__dirname, '../../server'), dir], { detached: true, stdio: ['ignore', out, err, 'ignore'] })
 
-        red5json.server.pid = child.pid
-        fs.writeFile(path.join(dir, 'red5.json'), JSON.stringify(red5json, null, 2), () => { })
+        horsepowerjson.server.pid = child.pid
+        fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerjson, null, 2), () => { })
 
         child.unref()
         console.log(`Server started with a process id of "${child.pid}"`)
@@ -59,7 +59,7 @@ export default class StartServerCommand extends Command {
       }
     } catch (e) {
       if (e.code == 'MODULE_NOT_FOUND') {
-        console.log(error('This is not a red5 project, add a path to a project containing a "red5.json" file.'))
+        console.log(error('This is not a horsepower project, add a path to a project containing a "horsepower.json" file.'))
       } else {
         console.log(error(e.message))
       }

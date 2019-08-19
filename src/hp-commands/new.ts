@@ -12,12 +12,12 @@ export interface CreateOptions {
   type: 'typescript' | 'javascript'
 }
 
-const sourceLocation = 'https://github.com/red5-server/red5'
+const sourceLocation = 'https://github.com/horsepowerjs/horsepower'
 const testHost = 'http://localhost:5000'
 
 export default class extends Command {
   public name: string = 'new';
-  public description: string = 'Creates a new red5 project';
+  public description: string = 'Creates a new horsepower project';
   public options: CmdArguments[] = [
     { name: 'project', defaultOption: true },
     { name: 'type', defaultValue: 'javascript', type: String, description: 'The type of project "javascript" or "typescript"' }

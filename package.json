@@ -1,6 +1,6 @@
 {
   "name": "@horsepower/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "horsepower command line tools for managing and creating horsepower projects.",
   "scripts": {
     "prepack": "rm -rf cli && rm -rf types && tsc -p .",

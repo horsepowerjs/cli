@@ -1,4 +1,4 @@
-# Horse Power Command Line Tool
+# Horsepower Command Line Tool
 
 * [Installation](#installation)
 * Project Management

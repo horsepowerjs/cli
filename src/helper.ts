@@ -4,10 +4,10 @@ import { error } from '.'
 
 export async function isHorsepowerProject(dir?: string) {
   const DIR = dir ? path.resolve(process.cwd(), dir) : process.cwd()
-  const RED5_PATH = path.join(DIR, 'horsepower.json')
+  const HP_PATH = path.join(DIR, 'horsepower.json')
   return new Promise<boolean>(resolve => {
     try {
-      fs.stat(RED5_PATH, async (err, stats) => {
+      fs.stat(HP_PATH, async (err, stats) => {
         return resolve(err ? false : stats.isFile())
       })
     } catch (e) { return resolve(false) }

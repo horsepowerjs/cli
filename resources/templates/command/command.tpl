@@ -1,4 +1,4 @@
-const { Command } = require('@red5/server')
+const { Command } = require('@horsepower/server')
 
 module.exports = class extends Command {
 

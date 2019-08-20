@@ -163,7 +163,7 @@ async function runCommand() {
               console.log(e)
             }
           } catch (e) {
-            console.log(error('Command was not found'))
+            console.log(error(`Command "${mainOptions.command}" was not found`))
             console.log('  horsepower <command> [options]')
             console.log('  -- Run "horsepower list" for a list of commands')
           }

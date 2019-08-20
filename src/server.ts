@@ -16,7 +16,7 @@ let interval: NodeJS.Timeout | null = setInterval(watch, 1000)
 
 process.on('exit', () => process.stdout.write(`Process "${process.pid}" has exited`))
 
-let cwd = process.argv[2] ? process.argv[2] : process.cwd()
+let cwd = (process.argv[2] ? process.argv[2] : process.cwd()).replace(/\\/g, '/')
 
 // Watch major directories for file changes and restart the server if a file changes
 chokidar.watch([
@@ -71,37 +71,48 @@ function serverChange() {
   }
 }
 
-function sassChange() {
+function sassChange(c: any, file: string) {
+  let changed = file.replace(/\\/g, '/')
+    .replace(path.posix.join(cwd, 'resources/assets/styles'), '')
+  console.log(chalk.blueBright(`SASS file "${changed}" has changed at [${new Date().toLocaleString()}]`))
   glob(path.join(cwd, 'resources/assets/styles/**/*.{scss,sass,css}'), async (err, files) => {
     for (let file of files) {
-      let f = path.parse(file)
+      // file = file.replace(/\\/g, '/').replace(/^.:/i, '')
+      let f = path.posix.parse(file)
 
       // If this is a sass partial file skip it
-      if (f.name.startsWith('_') && (f.name.endsWith('scss') || f.name.endsWith('sass'))) continue
+      if (f.name.startsWith('_') && (f.ext.endsWith('.scss') || f.ext.endsWith('.sass'))) continue
 
       // Create the save file based on the source file
       let savePath = file
-        .replace(path.join(cwd, 'resources/assets/styles'), '')
+        .replace(path.posix.join(cwd, 'resources/assets/styles'), '')
         .replace(/(sass|scss)$/, 'css')
 
       // make the directory so the file can be saved
-      mkdirp.sync(path.join(cwd, 'public/css', path.parse(savePath).dir))
+      if (!fs.existsSync(path.posix.join(cwd, 'public/css')))
+        mkdirp.sync(path.posix.join(cwd, 'public/css', path.posix.parse(savePath).dir))
 
       // If the file is a css file, just copy it
-      if (f.ext == '.css') {
-        fs.createReadStream(file).pipe(fs.createWriteStream(path.join(cwd, 'public/css', savePath)))
+      if (f.ext.endsWith('.css')) {
+        fs.createReadStream(file).pipe(fs.createWriteStream(path.posix.join(cwd, 'public/css', savePath)))
         continue
       }
 
       // This must be a main sass file, compile it
-      sass.render({
-        file,
-        outputStyle: 'compressed'
-      }, async (err, result) => {
-        if (err) return
+      let writeLocation = path.posix.join(cwd, 'public/css', savePath)
+      try {
+        let result = sass.renderSync({ file, outputStyle: 'compressed' })
         let css = result.css.toString()
-        await new Promise(r => fs.writeFile(path.join(cwd, 'public/css', savePath), css, (err) => r()))
-      })
+
+        await new Promise(resolve => fs.writeFile(writeLocation, css, (err) => {
+          if (err) return resolve(err)
+          return resolve()
+        }))
+
+        console.log(chalk.blueBright(`SASS file "${writeLocation.replace(cwd, '')}" written at [${new Date().toLocaleString()}]`))
+      } catch (e) {
+        console.log(chalk.redBright(`SASS file "${writeLocation.replace(cwd, '')}" was not written at [${new Date().toLocaleString()}]`))
+      }
     }
   })
 

@@ -4,7 +4,7 @@ import * as cp from 'child_process'
 import { error, info } from '..'
 import * as rimraf from 'rimraf'
 import { Command, CmdArguments } from './Command'
-import StartServerCommand from './server/start';
+import ServerStartCommand from './server/start';
 const clone = require('git-clone')
 
 export interface CreateOptions {
@@ -124,7 +124,7 @@ export default class extends Command {
   }
 
   private async startTestServer(projectDir: string) {
-    await StartServerCommand.start({ path: projectDir })
+    await ServerStartCommand.start({ path: projectDir })
     // return new Promise<boolean>(resolve => {
     //   // cp.fork(`${path.join(projectDir, 'index.js')}`)
     //   // cp.fork('npm start')

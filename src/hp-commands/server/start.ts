@@ -12,7 +12,7 @@ interface ServerStartOptions {
   path?: string
 }
 
-export default class StartServerCommand extends Command {
+export default class ServerStartCommand extends Command {
   public name: string = 'server:start'
   public description: string = 'Starts a server that handles requests for an application'
   public options: CmdArguments[] = [
@@ -25,14 +25,14 @@ export default class StartServerCommand extends Command {
     const isProd = ['prod', 'production'].includes(process.env.APP_ENV || 'prod')
     if (!await isHorsepowerProject(dir)) return notAProject()
     try {
-      let horsepowerjson = await import(path.join(dir, 'horsepower.json'))
-      if (!horsepowerjson.server) horsepowerjson.server = {}
-      if (horsepowerjson.server.pid && horsepowerjson.server.pid > 0) {
+      let horsepowerJson = await import(path.join(dir, 'horsepower.json'))
+      if (!horsepowerJson.server) horsepowerJson.server = {}
+      if (horsepowerJson.server.pid && horsepowerJson.server.pid > 0) {
         // Attempt to kill the process
         // If start gets called when a process is already running we need to kill it
         // otherwise there will be multiple servers running which can cause issues
         try {
-          let pid = horsepowerjson.server.pid
+          let pid = horsepowerJson.server.pid
           os.platform() == 'win32' ? process.kill(pid) : process.kill(-pid)
         } catch (e) {
           console.log(error(e.message))
@@ -49,8 +49,8 @@ export default class StartServerCommand extends Command {
       try {
         let child = cp.spawn('node', [path.join(__dirname, '../../server'), dir], { detached: true, stdio: ['ignore', out, err, 'ignore'] })
 
-        horsepowerjson.server.pid = child.pid
-        fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerjson, null, 2), () => { })
+        horsepowerJson.server.pid = child.pid
+        fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerJson, null, 2), () => { })
 
         child.unref()
         console.log(`Server started with a process id of "${child.pid}"`)
@@ -67,6 +67,6 @@ export default class StartServerCommand extends Command {
   }
 
   public async fire(options: ServerStartOptions) {
-    StartServerCommand.start(options)
+    ServerStartCommand.start(options)
   }
 }

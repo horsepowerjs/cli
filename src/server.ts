@@ -5,8 +5,13 @@ import * as glob from 'glob'
 import chalk from 'chalk'
 import * as sass from 'node-sass'
 import * as chokidar from 'chokidar'
-import ServerListCommand from './hp-commands/server/list';
-import mkdirp = require('mkdirp');
+import ServerListCommand from './hp-commands/server/list'
+import mkdirp = require('mkdirp')
+import * as typescript from 'typescript'
+import * as uglify from 'uglify-es'
+import rimraf = require('rimraf')
+import concat = require('concat')
+import deepmerge = require('deepmerge')
 
 // The main server process
 let server: null | cp.ChildProcess
@@ -18,6 +23,8 @@ process.on('exit', () => process.stdout.write(`Process "${process.pid}" has exit
 
 let cwd = (process.argv[2] ? process.argv[2] : process.cwd()).replace(/\\/g, '/')
 
+let startTime = Date.now()
+
 // Watch major directories for file changes and restart the server if a file changes
 chokidar.watch([
   path.join(cwd, 'app'),
@@ -25,7 +32,13 @@ chokidar.watch([
   path.join(cwd, 'routes')
 ]).on('all', serverChange)
 
-chokidar.watch(path.join(cwd, 'resources/assets/styles')).on('all', sassChange)
+chokidar.watch(path.join(cwd, 'resources/assets/styles'), {
+  awaitWriteFinish: { stabilityThreshold: 100 }
+}).on('all', stylesChange)
+
+chokidar.watch(path.join(cwd, 'resources/assets/scripts'), {
+  awaitWriteFinish: { stabilityThreshold: 100 }
+}).on('all', scriptsChange)
 
 let maxRestarts = 5
 let restarts = 0
@@ -35,7 +48,7 @@ let restarts = 0
 async function createServer() {
   if (server) return
   try {
-    console.log(chalk.blueBright(`Starting the development server at [${new Date().toLocaleString()}]`))
+    console.log(chalk.blueBright(`[${new Date().toUTCString()}] Starting the development server`))
 
     server = cp.spawn('node', [path.join(cwd, 'index.js')], { windowsHide: true })
     server.stdout && server.stdout.on('data', chunk => process.stdout.write(chunk))
@@ -43,7 +56,7 @@ async function createServer() {
 
     server.on('close', () => {
       server = null
-      console.log(chalk.greenBright(`Sever has successfully shut down at [${new Date().toLocaleString()}]`))
+      console.log(chalk.greenBright(`[${new Date().toUTCString()}] Sever has successfully shut down`))
     })
     restarts = 0
     ServerListCommand.addServer(cwd, process.pid)
@@ -66,16 +79,18 @@ async function watch() {
 
 function serverChange() {
   if (server) {
-    console.log(chalk.blueBright(`File changed at [${new Date().toLocaleString()}] restarting the development server`))
+    console.log(chalk.blueBright(`[${new Date().toUTCString()}] File changed, restarting the development server`))
     server.kill()
   }
 }
 
-function sassChange(c: any, file: string) {
+function stylesChange(c: any, file: string) {
+  if (Date.now() - startTime < 2000) return
   let changed = file.replace(/\\/g, '/')
-    .replace(path.posix.join(cwd, 'resources/assets/styles'), '')
-  console.log(chalk.blueBright(`SASS file "${changed}" has changed at [${new Date().toLocaleString()}]`))
-  glob(path.join(cwd, 'resources/assets/styles/**/*.{scss,sass,css}'), async (err, files) => {
+    .replace(path.posix.join(cwd, 'resources/assets/styles/'), '')
+  let cFile = path.posix.parse(file)
+  console.log(chalk.blueBright(`[${new Date().toUTCString()}] ${cFile.ext.endsWith('.css') ? 'CSS' : 'SASS'} file "${changed}" has changed`))
+  glob(path.join(cwd, 'resources/assets/styles/**/[^_]*.{scss,sass,css}'), async (err, files) => {
     for (let file of files) {
       // file = file.replace(/\\/g, '/').replace(/^.:/i, '')
       let f = path.posix.parse(file)
@@ -94,26 +109,98 @@ function sassChange(c: any, file: string) {
 
       // If the file is a css file, just copy it
       if (f.ext.endsWith('.css')) {
-        fs.createReadStream(file).pipe(fs.createWriteStream(path.posix.join(cwd, 'public/css', savePath)))
+        let writeLocation = path.posix.join(cwd, 'public/css', savePath)
+        fs.createReadStream(file).pipe(fs.createWriteStream(writeLocation))
+        console.log(chalk.blueBright(`[${new Date().toUTCString()}] CSS file "${writeLocation.replace(cwd + '/', '')}" written`))
         continue
       }
 
       // This must be a main sass file, compile it
       let writeLocation = path.posix.join(cwd, 'public/css', savePath)
-      try {
-        let result = sass.renderSync({ file, outputStyle: 'compressed' })
-        let css = result.css.toString()
+      let result = sass.renderSync({ file, outputStyle: 'compressed' })
+      let css = result.css.toString()
 
-        await new Promise(resolve => fs.writeFile(writeLocation, css, (err) => {
-          if (err) return resolve(err)
-          return resolve()
-        }))
+      await new Promise(resolve => fs.writeFile(writeLocation, css, (err) => err ? resolve(err) : resolve()))
 
-        console.log(chalk.blueBright(`SASS file "${writeLocation.replace(cwd, '')}" written at [${new Date().toLocaleString()}]`))
-      } catch (e) {
-        console.log(chalk.redBright(`SASS file "${writeLocation.replace(cwd, '')}" was not written at [${new Date().toLocaleString()}]`))
-      }
+      console.log(chalk.blueBright(`[${new Date().toUTCString()}] CSS file "${writeLocation.replace(cwd + '/', '')}" written`))
     }
   })
 
+}
+
+
+function scriptsChange(c: any, file: string) {
+  if (Date.now() - startTime < 2000) return
+  let changed = file.replace(/\\/g, '/')
+    .replace(path.posix.join(cwd, 'resources/assets/scripts/'), '')
+  let cFile = path.posix.parse(file)
+  console.log(chalk.blueBright(`[${new Date().toUTCString()}] ${cFile.ext.endsWith('.ts') ? 'TS' : 'JS'} file "${changed}" has changed`))
+  glob(path.join(cwd, 'resources/assets/scripts/**/tsconfig.json'), async (err, files) => {
+    for (let file of files) {
+
+      let pathInfo = path.posix.parse(file)
+      // Load the configuration
+      let options: any = await new Promise(resolve => fs.readFile(file, (err, data) => resolve(JSON.parse(data.toString()))))
+
+      if (fs.existsSync(path.join(__dirname, '../resources/temp/scripts')))
+        rimraf.sync(path.join(__dirname, '../resources/temp/scripts/*'))
+
+      options = deepmerge(options, {
+        compilerOptions: <typescript.CompilerOptions>{
+          outDir: path.join(__dirname, '../resources/temp/scripts')
+        }
+      })
+
+      // Parse the configuration file
+      let config = typescript.parseJsonConfigFileContent(options, typescript.sys, pathInfo.dir)
+      // Create the program and generate the output
+      let program = typescript.createProgram(config.fileNames, config.options)
+      let emitResult = program.emit()
+
+      let allDiagnostics = typescript
+        .getPreEmitDiagnostics(program)
+        .concat(emitResult.diagnostics);
+
+      allDiagnostics.forEach(diagnostic => {
+        if (diagnostic.file) {
+          let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
+            diagnostic.start!
+          );
+          let message = typescript.flattenDiagnosticMessageText(
+            diagnostic.messageText,
+            "\n"
+          );
+          console.log(
+            `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`
+          );
+        } else {
+          console.log(
+            `${typescript.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`
+          );
+        }
+      })
+
+      let files = await new Promise<string[]>(r => glob(path.join(__dirname, '../resources/temp/scripts/**/*.js'), (err, files) => r(files)))
+
+      let result: uglify.MinifyOutput = await new Promise(resolve => {
+        concat(files).then((result: string) => {
+          resolve(uglify.minify(result, {
+            compress: true,
+            mangle: true
+          }))
+        })
+      })
+
+
+      result.error && console.log(result.error)
+      if (!result.error)
+        fs.writeFile(path.join(cwd, 'public/js/app.min.js'), result.code, () => {
+          if (err)
+            console.error(chalk.redBright(`[${new Date().toUTCString()}] JS file "public/js/app.js" was not minified`))
+          else
+            console.log(chalk.blueBright(`[${new Date().toUTCString()}] JS file "public/js/app.min.js" written`))
+        })
+
+    }
+  })
 }

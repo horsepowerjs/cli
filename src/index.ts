@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import * as glob from 'glob'
 import { Command } from './hp-commands/Command'
-import { isHorsepowerProject, notAProject } from './helper'
+import { notAProject, isHorsepowerProject } from './helper'
 import ListCommands, { ItemInfo } from './hp-commands/list'
 
 export const error = chalk.red
@@ -56,29 +56,6 @@ export function replaceTemplateVars(data: string, replacements: [string, string]
   return data
 }
 
-
-// interface Option {
-//   name: Options
-//   description: string
-// }
-
-// enum Options {
-//   New = 'new', Serve = 'serve',
-//   Add = 'add', Remove = 'remove',
-//   MakeController = 'make:controller',
-//   MakeMiddleware = 'make:middleware',
-//   CommandMake = 'command:make',
-//   Help = 'help'
-// }
-
-// let options: Option[] = [
-//   { name: Options.New, description: 'Creates a new project' },
-//   { name: Options.MakeController, description: `Makes a new controller` },
-//   { name: Options.MakeMiddleware, description: `Makes a new middleware` },
-//   { name: Options.CommandMake, description: `Makes a new command` },
-//   { name: Options.Serve, description: 'Serves the current project' },
-// ]
-
 async function runCommand() {
   const mainOptions = cmdArgs(mainDefinitions, { stopAtFirstUnknown: true } as any)
   if (mainOptions.version === null) {
@@ -96,81 +73,61 @@ async function runCommand() {
       console.log(error('This is not a working horsepower application'))
     }
   } else {
+    let [commandGroup, commandName] = mainOptions.command.split(':')
     try {
-      switch (mainOptions.command) {
-        // case Options.Serve:
-        //   // serve()
-        //   console.log(warning('Not yet implemented'))
-        //   break
-        // case Options.Help:
-        //   let longest = options.reduce<number>((s, v) => v.name.length > s ? v.name.length : s, 0)
-        //   for (let opt of options) {
-        //     console.log(''.padStart(2) + `${opt.name}`.padEnd(longest + 4) + `${opt.description}`)
-        //   }
-        //   break
-        default:
-          try {
-            let [command_group, command_name] = mainOptions.command.split(':')
-            // Makes sure this is a horsepower project before running the command unless this is a new project
-            let isProject = await isHorsepowerProject()
-            // console.log(command_group, command_name)
-            // console.log(command_group != 'new', command_name != '', isProject)
-            // let horsepowerProject =
-            if (
-              (command_group != 'new' && command_name != '' && !isProject) &&
-              (command_group != 'list' && command_name != '' && !isProject) &&
-              (command_group != 'server' && !['start', 'stop', 'log'].includes(command_name))
-            ) {
-              return notAProject()
-            }
+      // Makes sure this is a horsepower project before running the command unless this is a new project
+      let isProject = await isHorsepowerProject()
+      if (
+        (commandGroup != 'new' && commandName != '' && !isProject) &&
+        (commandGroup != 'list' && commandName != '' && !isProject) &&
+        (commandGroup != 'server' && !['start', 'stop', 'log', 'kill'].includes(commandName))
+      ) {
+        return notAProject()
+      }
 
-            // Gets the command to execute
-            let cmd = await ListCommands.getCommand(command_group, command_name) as ItemInfo
+      // Gets the command to execute
+      let cmd = await ListCommands.getCommand(commandGroup, commandName) as ItemInfo
 
-            // Loads the command and creates an instance
-            let reqCmd = await import(cmd.file)
-            let command: Command
-            if (reqCmd && reqCmd.default) command = new reqCmd.default()
-            else command = new reqCmd()
+      // Loads the command and creates an instance
+      let reqCmd = await import(cmd.file)
+      let command: Command
+      if (reqCmd && reqCmd.default) command = new reqCmd.default()
+      else command = new reqCmd()
 
-            // This is a help command, show the help information and exit
-            if (mainOptions.help === null) {
-              let defaultOption = command.options.find(i => i.defaultOption || false)
+      // This is a help command, show the help information and exit
+      if (mainOptions.help === null) {
+        let defaultOption = command.options.find(i => i.defaultOption || false)
 
-              // Log the command
-              console.log(`\x1b[32musage: horsepower ${command.name} ${defaultOption ? `<${defaultOption.name}>` : ''}\x1b[0m\n`)
+        // Log the command
+        console.log(`\x1b[32musage: hp ${command.name} ${defaultOption ? `<${defaultOption.name}>` : ''}\x1b[0m\n`)
 
-              // Log the description
-              console.log(`${command.description || ''}\n`)
-              let longest = command.options.reduce((acc, val) => val.name.length > acc && !val.defaultOption ? val.name.length : acc, 0)
+        // Log the description
+        console.log(`${command.description || ''}\n`)
+        let longest = command.options.reduce((acc, val) => val.name.length > acc && !val.defaultOption ? val.name.length : acc, 0)
 
-              // Log all the values and their description
-              command.options.forEach(opt => {
-                if (opt.defaultOption) return
-                console.log(`    ${opt.alias ? '-' + opt.alias + ', ' : ''}--${opt.name.padEnd(longest + 2, ' ')} ${opt.description || ''}`)
-              })
-              return
-            }
+        // Log all the values and their description
+        command.options.forEach(opt => {
+          if (opt.defaultOption) return
+          console.log(`    ${opt.alias ? '-' + opt.alias + ', ' : ''}--${opt.name.padEnd(longest + 2, ' ')} ${opt.description || ''}`)
+        })
+        return
+      }
 
-            try {
-              // Make sure the name and description are set and are correct
-              if (!command.name) throw new Error('Command does not have a name')
-              else if (!command.description) throw new Error('Command does not have a description')
-              else if (command.name != mainOptions.command) throw new Error(`Command name mismatch: "${mainOptions.command}" -> "${command.name}"`)
-              // Executes the command
-              else await command.fire(command.makeArgs(mainDefinitions))
-            } catch (e) {
-              console.log(e)
-            }
-          } catch (e) {
-            console.log(error(`Command "${mainOptions.command}" was not found`))
-            console.log('  horsepower <command> [options]')
-            console.log('  -- Run "horsepower list" for a list of commands')
-          }
-          break
+      try {
+        // Make sure the name and description are set and are correct
+        if (!command.name) throw new Error('Command does not have a name')
+        else if (!command.description) throw new Error('Command does not have a description')
+        else if (command.name != mainOptions.command) throw new Error(`Command name mismatch: "${mainOptions.command}" -> "${command.name}"`)
+        // Executes the command
+        else await command.fire(command.makeArgs(mainDefinitions))
+      } catch (e) {
+        console.log(e)
       }
     } catch (e) {
-      console.log(error(e.message))
+      console.log(e)
+      console.log(error(`Command "${mainOptions.command}" was not found`))
+      console.log('  hp <command> [options]')
+      console.log('  -- Run "hp list" for a list of commands')
     }
   }
 }

@@ -21,21 +21,21 @@ export default class ServerStopCommand extends Command {
     let pid
     let dir = options.path ? path.resolve(process.cwd(), options.path) : process.cwd()
     if (!await isHorsepowerProject(dir)) return notAProject()
-    let horsepowerjson = await import(path.join(dir, 'horsepower.json'))
-    if (horsepowerjson.server && horsepowerjson.server.pid) {
-      pid = horsepowerjson.server.pid
-      delete horsepowerjson.server.pid
+    let horsepowerJson = await import(path.join(dir, 'horsepower.json'))
+    if (horsepowerJson.server && horsepowerJson.server.pid) {
+      pid = horsepowerJson.server.pid
+      delete horsepowerJson.server.pid
       !silent && console.log(`Stopping server with a process id of "${pid}"`)
       try {
         os.platform() == 'win32' ? process.kill(pid) : process.kill(-pid)
       } catch (e) {
         !silent && console.log(warning('Server process was not found, so it must have been stopped manually. Thats okay, no action is needed.'))
       }
-      ServerListCommand.removeServer(pid)
+      await ServerListCommand.removeServer(pid)
     } else {
       !silent && console.log(warning('There is no process id set for this project.'))
     }
-    fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerjson, null, 2), () => { })
+    fs.writeFile(path.join(dir, 'horsepower.json'), JSON.stringify(horsepowerJson, null, 2), () => { })
     fs.truncate(path.join(dir, 'storage/framework/logs/server.log'), () => { })
   }
 

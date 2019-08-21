@@ -16,5 +16,5 @@ export async function isHorsepowerProject(dir?: string) {
 
 export function notAProject() {
   console.log(error('This is not a horsepower project'))
-  console.log('  -- Run "horsepower new <project-name>" to create a new project')
+  console.log('  -- Run "hp new <project-name>" to create a new project')
 }

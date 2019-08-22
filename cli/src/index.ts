@@ -20,12 +20,13 @@ export const PATH: string = process.cwd()
 /** @type {string} The root location of where the resources such as template files live */
 export const RESOURCES: string = path.join(__dirname, '../resources')
 
+export * from './packer'
+
 const mainDefinitions: OptionDefinition[] = [
   { name: 'command', defaultOption: true },
   { name: 'version', alias: 'v', defaultValue: '1' },
   { name: 'help', alias: 'h', defaultValue: '1' }
 ]
-
 
 /**
  * Tests if a path is the location of an existing file or directory

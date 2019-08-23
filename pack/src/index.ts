@@ -1,7 +1,7 @@
 import * as path from 'path'
 import webpack = require('webpack')
 import { MultiCompiler, MultiWatching, Configuration } from 'webpack'
-import MiniCssExtractPlugin = require('mini-css-extract-plugin')
+import styles from './configs/styles'
 
 // type FileTypes = 'js' | 'ts' | 'css' | 'sass' | 'less'
 // type Configurations = { [K in FileTypes]: Configuration[] }
@@ -26,7 +26,8 @@ class pack {
     this.watcherTimeout = setTimeout(() => {
       if (this.watcher && this.watcher instanceof MultiWatching) this.watcher.close(() => { })
       // this.watcher = webpack(Object.values(this.config).reduce((arr, itm) => arr.concat(itm), []), (error, stats) => {
-      this.watcher = webpack(this.config, (error, stats) => {
+      this.compiler = webpack(this.config)
+      this.watcher = this.compiler.watch({}, (error, stats) => {
         if (error || stats.hasErrors()) {
           (<any>stats).stats.forEach((stat: any) => {
             console.log(stat.compilation.errors)
@@ -34,14 +35,9 @@ class pack {
           console.log(error)
         }
         else console.log(stats)
+        // if (err) console.log(err)
+        // else console.log(stats)
       })
-      if (this.watcher instanceof MultiCompiler) {
-        this.watcher.hooks.run
-      }
-      // this.watcher = this.compiler.watch({}, (err, stats) => {
-      //   // if (err) console.log(err)
-      //   // else console.log(stats)
-      // })
     }, 1000)
     return this
   }
@@ -87,34 +83,7 @@ class pack {
   public style(inputs: string, output: string): this
   public style(inputs: string[], output: string): this
   public style(inputs: (string[] | string), output: string) {
-    let fullInputs = Array.isArray(inputs) ? inputs.map(input => path.join(this.cwd, input)) : path.join(this.cwd, inputs)
-    let outputDir = path.parse(path.join(this.cwd, output)).dir
-    this.config.push({
-      entry: { [path.parse(output).name]: fullInputs },
-      output: {
-        path: outputDir,
-        filename: '[name].css'
-      },
-      plugins: [
-        new MiniCssExtractPlugin({
-          filename: '[name].css',
-          chunkFilename: '[id].css',
-          ignoreOrder: false
-        })
-      ],
-      module: {
-        rules: [
-          {
-            test: /\.(scss|sass|css)$/,
-            use: ['style-loader', {
-              loader: MiniCssExtractPlugin.loader
-            },
-              'css-loader', 'sass-loader'],
-            exclude: /node_modules/
-          }
-        ]
-      }
-    })
+    this.config.push(styles(inputs, output))
     return this._webpackStart()
   }
 

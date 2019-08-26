@@ -3,15 +3,6 @@ import * as path from 'path'
 import chalk from 'chalk'
 import * as chokidar from 'chokidar'
 import ServerListCommand from './hp-commands/server/list'
-// import * as fs from 'fs'
-// import * as glob from 'glob'
-// import * as sass from 'node-sass'
-// import mkdirp = require('mkdirp')
-// import * as typescript from 'typescript'
-// import * as uglify from 'uglify-es'
-// import rimraf = require('rimraf')
-// import concat = require('concat')
-// import deepmerge = require('deepmerge')
 
 // The main server process
 let server: null | cp.ChildProcess

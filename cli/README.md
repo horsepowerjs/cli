@@ -37,7 +37,7 @@ horsepower new <project-name>
 
 The following steps are taken:
 
-1. `git clone` the bare bones project from [github](https://github.com/horsepower-server/horsepower)
+1. `git clone` the bare bones project from [github](https://github.com/horsepowerjs/horsepower)
 2. Install the node dependencies
 3. Start a test server
 4. Opens `http://localhost:5000` within a browser to make sure everything works

@@ -2,6 +2,7 @@ import * as cp from 'child_process'
 import * as path from 'path'
 import chalk from 'chalk'
 import * as chokidar from 'chokidar'
+import * as glob from 'glob'
 import ServerListCommand from './hp-commands/server/list'
 
 // The main server process
@@ -14,14 +15,19 @@ process.on('exit', () => process.stdout.write(`Process "${process.pid}" has exit
 
 let cwd = (process.argv[2] ? process.argv[2] : process.cwd()).replace(/\\/g, '/')
 
-let startTime = Date.now()
+// let startTime = Date.now()
+let restarting = false
 
 // Watch major directories for file changes and restart the server if a file changes
-chokidar.watch([
-  path.join(cwd, 'app'),
-  path.join(cwd, 'config'),
-  path.join(cwd, 'routes')
-]).on('all', serverChange)
+new Promise<string[]>(r => glob(path.join(cwd, 'node_modules/@horsepower/*/lib'), (err, files) => r(err ? [] : files))).then(files => {
+  chokidar.watch([
+    path.join(cwd, 'app'),
+    path.join(cwd, 'config'),
+    path.join(cwd, 'routes'),
+    ...files
+    // path.join(cwd, 'node_modules/@horsepower/*/lib')
+  ], { followSymlinks: true }).on('all', serverChange)
+})
 
 // chokidar.watch(path.join(cwd, 'resources/assets/styles'), {
 //   awaitWriteFinish: { stabilityThreshold: 100 }
@@ -51,6 +57,7 @@ async function createServer() {
     })
     restarts = 0
     ServerListCommand.addServer(cwd, process.pid)
+    restarting = false
   } catch (e) {
     if (restarts++ >= maxRestarts) {
       exit()
@@ -69,6 +76,8 @@ async function watch() {
 }
 
 function serverChange() {
+  if (restarting) return
+  restarting = true
   if (server) {
     console.log(chalk.blueBright(`[${new Date().toUTCString()}] File changed, restarting the development server`))
     server.kill()
